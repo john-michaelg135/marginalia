@@ -26,7 +26,6 @@
 
 html {
   color-scheme: dark;
-  scroll-behavior: smooth;
 }
 
 body {
@@ -35,10 +34,9 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   background-image:
-    radial-gradient(1100px 520px at 88% -12%, rgba(226, 169, 78, 0.075), transparent 62%),
-    radial-gradient(950px 640px at -12% 34%, rgba(143, 199, 160, 0.055), transparent 58%),
-    radial-gradient(760px 480px at 55% 118%, rgba(127, 182, 206, 0.05), transparent 60%);
-  background-attachment: fixed;
+    radial-gradient(1400px 800px at 90% -20%, rgba(226, 169, 78, 0.055), transparent 70%),
+    radial-gradient(1200px 900px at -15% 40%, rgba(143, 199, 160, 0.04), transparent 70%),
+    radial-gradient(1000px 700px at 55% 120%, rgba(127, 182, 206, 0.035), transparent 70%);
   min-height: 100vh;
 }
 
@@ -68,28 +66,30 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.05;
+  opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  will-change: auto;
+  contain: strict;
 }
 
 .glow {
   position: fixed;
   border-radius: 9999px;
-  filter: blur(70px);
   pointer-events: none;
   z-index: 0;
   will-change: transform;
+  contain: layout style;
 }
 .glow-a {
-  width: 520px; height: 380px;
-  top: -140px; right: -120px;
-  background: rgba(226, 169, 78, 0.1);
+  width: 900px; height: 650px;
+  top: -280px; right: -200px;
+  background: radial-gradient(ellipse at center, rgba(226, 169, 78, 0.09) 0%, rgba(226, 169, 78, 0.04) 25%, rgba(226, 169, 78, 0.015) 50%, transparent 100%);
   animation: drift-a 26s ease-in-out infinite alternate;
 }
 .glow-b {
-  width: 460px; height: 420px;
-  bottom: -160px; left: -140px;
-  background: rgba(143, 199, 160, 0.09);
+  width: 800px; height: 700px;
+  bottom: -300px; left: -250px;
+  background: radial-gradient(ellipse at center, rgba(143, 199, 160, 0.08) 0%, rgba(143, 199, 160, 0.03) 25%, rgba(143, 199, 160, 0.01) 50%, transparent 100%);
   animation: drift-b 32s ease-in-out infinite alternate;
 }
 @keyframes drift-a {
@@ -106,7 +106,7 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
   30% { transform: scale(1.12) rotate(-3deg); opacity: 0.85; }
   60% { transform: scale(0.94) rotate(2deg); opacity: 1; }
 }
-.flame-live { animation: flicker 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
+.flame-live { animation: flicker 1.6s ease-in-out infinite; transform-origin: 50% 90%; will-change: transform; }
 
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(143, 199, 160, 0.5); }
@@ -114,14 +114,10 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 }
 .dot-live { animation: pulse-dot 2.2s ease-out infinite; }
 
-@keyframes pulse-ghost {
-  0%, 100% { opacity: 0.18; transform: scaleY(1); }
-  50% { opacity: 0.28; transform: scaleY(1.03); }
-}
-
+/* ---------- ghost animations (GPU-accelerated) ---------- */
 @keyframes ghost-x {
-  0% { left: 6%; }
-  100% { left: 86%; }
+  0% { transform: translateX(0); }
+  100% { transform: translateX(min(78vw, 900px)); }
 }
 @keyframes ghost-y {
   0%, 100% { transform: translateY(0px) rotate(-2deg); }
@@ -133,19 +129,23 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 }
 .ghost-x {
   animation: ghost-x 19s ease-in-out infinite alternate;
+  will-change: transform;
+  contain: layout style;
 }
 .ghost-y {
   animation: ghost-y 13s ease-in-out infinite;
+  will-change: transform;
 }
 
 @keyframes dust-drift {
-  0% { opacity: 0; transform: translateY(0) translateX(0); }
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
   20% { opacity: 0.4; }
   80% { opacity: 0.2; }
-  100% { opacity: 0; transform: translateY(-20px) translateX(10px); }
+  100% { transform: translate3d(10px, -20px, 0); opacity: 0; }
 }
 .dust-particle {
   animation: dust-drift 6s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 /* ---------- reveal on scroll ---------- */
@@ -153,10 +153,12 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
   opacity: 0;
   transform: translateY(16px);
   transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
 }
 .reveal.is-in {
   opacity: 1;
   transform: none;
+  will-change: auto;
 }
 
 /* ---------- shelf ---------- */
@@ -173,6 +175,7 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
     inset 0 1px 0 rgba(239, 233, 216, 0.16),
     0 18px 30px -12px rgba(0, 0, 0, 0.8),
     0 4px 10px rgba(0, 0, 0, 0.5);
+  contain: layout style paint;
 }
 
 .spine-shadow { box-shadow: var(--shadow-spine); }
@@ -189,8 +192,8 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 }
 
 @keyframes sheen {
-  from { transform: translateX(-120%); }
-  to { transform: translateX(320%); }
+  from { transform: translate3d(-120%, 0, 0); }
+  to { transform: translate3d(320%, 0, 0); }
 }
 .fill-sheen::after {
   content: "";
@@ -199,17 +202,18 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
   width: 45%;
   background: linear-gradient(105deg, transparent, rgba(255, 250, 235, 0.32), transparent);
   animation: sheen 3.4s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* ---------- toast / modal motion ---------- */
 @keyframes toast-in {
-  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.97); }
   to { opacity: 1; transform: none; }
 }
 .toast-in { animation: toast-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 @keyframes modal-in {
-  from { opacity: 0; transform: translateY(22px) scale(0.975); }
+  from { opacity: 0; transform: translate3d(0, 22px, 0) scale(0.975); }
   to { opacity: 1; transform: none; }
 }
 .modal-in { animation: modal-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -232,7 +236,6 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 .tabnum { font-variant-numeric: tabular-nums; }
 
 @media (prefers-reduced-motion: reduce) {
-  .glow, .flame-live, .dot-live, .fill-sheen::after { animation: none !important; }
+  .glow, .flame-live, .dot-live, .fill-sheen::after, .ghost-x, .ghost-y, .dust-particle { animation: none !important; }
   .reveal { opacity: 1; transform: none; transition: none; }
-  html { scroll-behavior: auto; }
 }

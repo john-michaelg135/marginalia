@@ -258,7 +258,7 @@ export default function App() {
       <div className="glow glow-b" />
 
       {/* ------------------------------ header ------------------------------ */}
-      <header className="sticky top-0 z-50 border-b border-linesoft bg-ink/85 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-linesoft bg-ink/95">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-5">
           <div className="flex items-center gap-2.5">
             <IconBookmark className="h-5 w-5 text-brass" />

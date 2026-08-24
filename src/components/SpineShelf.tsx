@@ -130,7 +130,7 @@ export default function SpineShelf({ groups, onOpen }: { groups: ShelfGroup[]; o
                     className="ghost-x pointer-events-none absolute z-10"
                     style={{
                       top: "90px",
-                      left: "0",
+                      left: "3%",
                       animationDuration: `${17 + gi * 4}s`,
                       animationDelay: `${gi * -5}s`,
                     }}
