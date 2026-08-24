@@ -135,6 +135,19 @@ export const IconChevronRight = (p: P) => (
   </svg>
 );
 
+export const IconChevronLeft = (p: P) => (
+  <svg {...base(p)}>
+    <path d="m15 5.5-6.5 6.5L15 18.5" />
+  </svg>
+);
+
+export const IconFileText = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M14.5 3.5H7a1.5 1.5 0 0 0-1.5 1.5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8L14.5 3.5Z" />
+    <path d="M14 3.5V8h4.5M9 13h6M9 16.5h4" />
+  </svg>
+);
+
 export const IconHourglass = (p: P) => (
   <svg {...base(p)}>
     <path d="M7 3.5h10M7 20.5h10" />

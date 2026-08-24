@@ -11,6 +11,26 @@ export default function Taste({ books }: { books: Book[] }) {
   const [hovered, setHovered] = useState<string | null>(null);
   const stats = useMemo(() => genreStats(books), [books]);
 
+  if (stats.length === 0) {
+    return (
+      <Reveal>
+        <div className="rounded-lg border border-dashed border-line bg-pine/60 px-6 py-16 text-center">
+          <div className="mx-auto mb-5 flex justify-center">
+            <svg viewBox="0 0 200 200" className="h-32 w-32 opacity-30">
+              <circle cx="100" cy="100" r="70" fill="none" stroke="#26402f" strokeWidth="26" />
+              <circle cx="100" cy="100" r="70" fill="none" stroke="#48684f" strokeWidth="26" strokeDasharray="44 396" strokeDashoffset="0" transform="rotate(-90 100 100)" />
+              <circle cx="100" cy="100" r="70" fill="none" stroke="#3d5a42" strokeWidth="26" strokeDasharray="28 412" strokeDashoffset="-50" transform="rotate(-90 100 100)" />
+            </svg>
+          </div>
+          <p className="font-display text-xl italic text-fog">No genre data yet.</p>
+          <p className="mt-1.5 text-[13px] text-dim">
+            Start reading or log pages to see the shape of your taste emerge.
+          </p>
+        </div>
+      </Reveal>
+    );
+  }
+
   const total = stats.reduce((a, s) => a + (mode === "pages" ? s.pages : s.books), 0);
   const displayTotal = useCountUp(total);
   const { ref, inView } = useReveal<HTMLDivElement>();

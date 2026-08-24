@@ -6,7 +6,6 @@ import {
   clearLedger,
   fmtNum,
   loadBooks,
-  makeSeed,
   saveBooks,
   streakInfo,
   todayISO,
@@ -14,6 +13,7 @@ import {
   uid,
 } from "./lib/data";
 import { useCountUp } from "./lib/hooks";
+import { savePdf } from "./lib/pdfStore";
 import { IconFlame, IconPlus, IconBookmark } from "./components/icons";
 import { Reveal, SectionHead, ToastHost, type Toast } from "./components/ui";
 import SpineShelf, { type ShelfGroup } from "./components/SpineShelf";
@@ -22,6 +22,7 @@ import PacePanel from "./components/PacePanel";
 import Taste from "./components/Taste";
 import Ledger from "./components/Ledger";
 import { AddBookModal, BookDetailModal } from "./components/Modals";
+import PdfReader from "./components/PdfReader";
 
 /* --------------------------- intro stats --------------------------- */
 
@@ -73,6 +74,7 @@ export default function App() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [readerBookId, setReaderBookId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const toastId = useRef(0);
   const resetTimer = useRef<number | undefined>(undefined);
@@ -181,16 +183,45 @@ export default function App() {
 
   const rateBook = (id: string, n: number) => patchBook(id, (b) => ({ ...b, rating: n }));
 
-  const addBook = (data: { title: string; author: string; pages: number; genre: Genre; status: "reading" | "queue" }) => {
+  const attachPdf = (id: string, dataUrl: string) => {
+    savePdf(id, dataUrl).then(() => {
+      patchBook(id, (b) => ({ ...b, hasPdf: true }));
+      pushToast("PDF attached — open the reader anytime from the book detail.", "sage");
+    });
+  };
+
+  const openReader = (id: string) => {
+    setDetailId(null);
+    setReaderBookId(id);
+  };
+
+  const handleReaderPageChange = (page: number) => {
+    if (readerBookId) {
+      patchBook(readerBookId, (b) => ({ ...b, pdfLastPage: page }));
+    }
+  };
+
+  const addBook = (data: { title: string; author: string; pages: number; genre: Genre; status: "reading" | "queue"; pdfFile?: string }) => {
+    const bookId = uid();
     const book: Book = {
-      id: uid(),
-      ...data,
+      id: bookId,
+      title: data.title,
+      author: data.author,
+      pages: data.pages,
+      genre: data.genre,
+      status: data.status,
       currentPage: 0,
       startDate: data.status === "reading" ? todayISO() : undefined,
       sessions: [],
+      hasPdf: !!data.pdfFile,
     };
     setBooks((bs) => [book, ...bs]);
     setAddOpen(false);
+
+    if (data.pdfFile) {
+      savePdf(bookId, data.pdfFile);
+    }
+
     pushToast(`${data.title} shelved — ${data.status === "reading" ? "now on the nightstand." : "waiting in the queue."}`, "brass");
   };
 
@@ -203,8 +234,8 @@ export default function App() {
     window.clearTimeout(resetTimer.current);
     setConfirmReset(false);
     clearLedger();
-    setBooks(makeSeed());
-    pushToast("Ledger reset to the demo library.", "brass");
+    setBooks([]);
+    pushToast("Ledger cleared — a fresh start.", "brass");
   };
 
   /* ------- derived ------- */
@@ -372,9 +403,21 @@ export default function App() {
           onFinish={finishBook}
           onStart={startBook}
           onRate={rateBook}
+          onAttachPdf={attachPdf}
+          onOpenReader={openReader}
         />
       )}
       {addOpen && <AddBookModal onClose={() => setAddOpen(false)} onAdd={addBook} />}
+      {readerBookId && (() => {
+        const readerBook = books.find((b) => b.id === readerBookId);
+        return readerBook?.hasPdf ? (
+          <PdfReader
+            book={readerBook}
+            onClose={() => setReaderBookId(null)}
+            onPageChange={handleReaderPageChange}
+          />
+        ) : null;
+      })()}
     </div>
   );
 }

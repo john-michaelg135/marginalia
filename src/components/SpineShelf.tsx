@@ -85,16 +85,16 @@ export default function SpineShelf({ groups, onOpen }: { groups: ShelfGroup[]; o
         style={{ background: "radial-gradient(58% 62% at 50% 0%, rgba(226,169,78,.09), transparent 70%)" }}
       />
       <div className="space-y-10">
-        {groups.map((grp, gi) =>
-          grp.books.length ? (
-            <Reveal key={grp.label} delay={gi * 90}>
-              <div className="mb-3 flex items-baseline justify-between gap-3 px-0.5">
-                <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.24em] text-dim">
-                  {grp.label}
-                  <span className="ml-2 text-brass/80">{grp.books.length}</span>
-                </p>
-                <p className="hidden text-[12px] italic text-dim sm:block">{grp.note}</p>
-              </div>
+        {groups.map((grp, gi) => (
+          <Reveal key={grp.label} delay={gi * 90}>
+            <div className="mb-3 flex items-baseline justify-between gap-3 px-0.5">
+              <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.24em] text-dim">
+                {grp.label}
+                <span className="ml-2 text-brass/80">{grp.books.length}</span>
+              </p>
+              <p className="hidden text-[12px] italic text-dim sm:block">{grp.note}</p>
+            </div>
+            {grp.books.length > 0 ? (
               <div className="-mt-16 overflow-x-auto pb-1 [scrollbar-width:thin]">
                 <div className="w-max min-w-full">
                   <div className="flex items-end gap-[6px] px-1 pt-24">
@@ -105,9 +105,36 @@ export default function SpineShelf({ groups, onOpen }: { groups: ShelfGroup[]; o
                   <div className="shelf-board" />
                 </div>
               </div>
-            </Reveal>
-          ) : null
-        )}
+            ) : (
+              <div className="relative">
+                <div className="flex items-end gap-2 px-1 pt-4 pb-0">
+                  {/* Ghost spines as placeholder */}
+                  {[52, 68, 44, 60, 38, 56, 46].map((h, i) => (
+                    <div
+                      key={i}
+                      className="shrink-0 rounded-[3px] rounded-t-[5px] opacity-[0.18]"
+                      style={{
+                        height: `${h}px`,
+                        width: "16px",
+                        background: "linear-gradient(90deg, #3d5a42, #26402f)",
+                        boxShadow: "inset 1px 0 2px rgba(255,252,240,.08)",
+                        animationName: "pulse-ghost",
+                        animationDuration: `${2.4 + i * 0.3}s`,
+                        animationTimingFunction: "ease-in-out",
+                        animationIterationCount: "infinite",
+                        animationDelay: `${i * 0.2}s`,
+                      }}
+                    />
+                  ))}
+                  <span className="ml-3 self-center font-mono text-[11px] italic text-dim/60">
+                    waiting for books…
+                  </span>
+                </div>
+                <div className="shelf-board" />
+              </div>
+            )}
+          </Reveal>
+        ))}
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Book, Genre } from "../lib/data";
 import { GENRES, GENRE_LIST, fmtDate, fmtDateFull, fmtNum, paceOf, readDuration, todayISO } from "../lib/data";
-import { IconBook, IconCalendar, IconCheck, IconGauge, IconPlus } from "./icons";
+import { IconBook, IconCalendar, IconCheck, IconFileText, IconGauge, IconPlus } from "./icons";
 import { GenreChip, ModalShell, Stars } from "./ui";
 import ProgressBar from "./ProgressBar";
+import { pdfjs } from "../lib/pdfWorker";
 
 /* ------------------------- session strip --------------------------- */
 
@@ -45,6 +46,8 @@ export function BookDetailModal({
   onFinish,
   onStart,
   onRate,
+  onAttachPdf,
+  onOpenReader,
 }: {
   book: Book;
   books: Book[];
@@ -55,11 +58,26 @@ export function BookDetailModal({
   onFinish: (id: string) => void;
   onStart: (id: string) => void;
   onRate: (id: string, n: number) => void;
+  onAttachPdf: (id: string, dataUrl: string) => void;
+  onOpenReader: (id: string) => void;
 }) {
   const color = GENRES[book.genre].color;
   const pct = Math.round((book.currentPage / book.pages) * 100);
   const pace = book.status === "reading" ? paceOf(book, books) : null;
   const dur = readDuration(book);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || file.type !== "application/pdf") return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        onAttachPdf(book.id, reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <ModalShell onClose={onClose} labelledBy="book-detail-title" wide>
@@ -97,6 +115,40 @@ export function BookDetailModal({
         </div>
 
         <div className="mt-6 space-y-5">
+          {/* PDF attachment section */}
+          <div className="flex items-center gap-2">
+            {book.hasPdf ? (
+              <button
+                onClick={() => onOpenReader(book.id)}
+                className="flex cursor-pointer items-center gap-2 rounded-md border border-brass/50 bg-brass/10 px-4 py-2.5 font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-brass transition-all hover:-translate-y-px hover:bg-brass/20"
+              >
+                <IconBook className="h-4 w-4" />
+                Open reader
+              </button>
+            ) : (
+              <>
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handlePdfUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => pdfInputRef.current?.click()}
+                  className="flex cursor-pointer items-center gap-2 rounded-md border border-linesoft bg-moss px-4 py-2.5 font-mono text-[12px] font-medium text-fog transition-all hover:-translate-y-px hover:border-brass/60 hover:text-brass"
+                >
+                  <IconFileText className="h-4 w-4" />
+                  Attach PDF
+                </button>
+              </>
+            )}
+            {book.hasPdf && (
+              <span className="font-mono text-[10px] text-dim">
+                {book.pdfLastPage ? `Last read: page ${book.pdfLastPage}` : "PDF attached"}
+              </span>
+            )}
+          </div>
           {book.status === "reading" && (
             <>
               <div>
@@ -207,21 +259,51 @@ export function AddBookModal({
   onAdd,
 }: {
   onClose: () => void;
-  onAdd: (data: { title: string; author: string; pages: number; genre: Genre; status: "reading" | "queue" }) => void;
+  onAdd: (data: { title: string; author: string; pages: number; genre: Genre; status: "reading" | "queue"; pdfFile?: string }) => void;
 }) {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [pages, setPages] = useState("");
   const [genre, setGenre] = useState<Genre>("Literary Fiction");
   const [status, setStatus] = useState<"reading" | "queue">("queue");
+  const [pdfFile, setPdfFile] = useState<string | undefined>(undefined);
+  const [pdfName, setPdfName] = useState<string>("");
+  const [pdfPages, setPdfPages] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || file.type !== "application/pdf") return;
+    setPdfName(file.name);
+
+    const arrayBuffer = await file.arrayBuffer();
+    try {
+      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      const detectedPages = pdf.numPages;
+      setPdfPages(detectedPages);
+      if (!pages) {
+        setPages(String(detectedPages));
+      }
+    } catch {
+      // PDF parsing failed — user can still enter pages manually
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setPdfFile(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const p = parseInt(pages, 10);
     if (!title.trim()) return setError("Give the book a title.");
-    if (!Number.isFinite(p) || p < 1 || p > 5000) return setError("Pages should be a number between 1 and 5,000.");
-    onAdd({ title: title.trim(), author: author.trim() || "Unknown author", pages: p, genre, status });
+    if (!Number.isFinite(p) || p < 1 || p > 50000) return setError("Pages should be a number between 1 and 50,000.");
+    onAdd({ title: title.trim(), author: author.trim() || "Unknown author", pages: p, genre, status, pdfFile });
   };
 
   const inputCls =
@@ -248,8 +330,11 @@ export function AddBookModal({
               <input id="ab-author" value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Donna Tartt" className={inputCls} />
             </div>
             <div>
-              <label htmlFor="ab-pages" className="mb-1.5 block font-mono text-[10.5px] uppercase tracking-[0.18em] text-dim">Pages *</label>
-              <input id="ab-pages" type="number" min={1} max={5000} value={pages} onChange={(e) => setPages(e.target.value)} placeholder="559" className={inputCls} />
+              <label htmlFor="ab-pages" className="mb-1.5 block font-mono text-[10.5px] uppercase tracking-[0.18em] text-dim">
+                Pages {!pdfFile && "*"}
+                {pdfPages && <span className="ml-1.5 normal-case tracking-normal text-sage">· auto-detected from PDF</span>}
+              </label>
+              <input id="ab-pages" type="number" min={1} max={50000} value={pages} onChange={(e) => setPages(e.target.value)} placeholder={pdfFile ? "auto-detected" : "559"} className={inputCls} />
             </div>
           </div>
 
@@ -294,6 +379,34 @@ export function AddBookModal({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* PDF attachment */}
+          <div>
+            <p className="mb-1.5 font-mono text-[10.5px] uppercase tracking-[0.18em] text-dim">PDF (optional)</p>
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept="application/pdf"
+              onChange={handlePdfUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => pdfInputRef.current?.click()}
+              className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md border px-4 py-3 text-left transition-all duration-150 ${
+                pdfFile
+                  ? "border-sage/50 bg-sage/10"
+                  : "border-linesoft bg-moss/50 hover:border-line"
+              }`}
+            >
+              <IconFileText className={`h-4.5 w-4.5 shrink-0 ${pdfFile ? "text-sage" : "text-dim"}`} />
+              <span className={`text-[13px] ${pdfFile ? "text-sage" : "text-dim"}`}>
+                {pdfFile
+                  ? `${pdfName}${pdfPages ? ` · ${pdfPages} pages detected` : ""}`
+                  : "Attach a PDF — page count will be auto-detected"}
+              </span>
+            </button>
           </div>
 
           {error && <p className="rounded-md border border-ember/40 bg-ember/10 px-3.5 py-2.5 text-[13px] text-ember">{error}</p>}

@@ -158,6 +158,33 @@ function ActivityChart({ series }: { series: DayTotal[] }) {
 
 export default function PacePanel({ books }: { books: Book[] }) {
   const series = useMemo(() => activitySeries(books, 30), [books]);
+  const hasSessions = series.some((s) => s.pages > 0);
+
+  if (!hasSessions) {
+    return (
+      <Reveal>
+        <div className="rounded-lg border border-dashed border-line bg-pine/60 px-6 py-16 text-center">
+          <div className="mx-auto mb-5 flex items-end justify-center gap-1.5 opacity-30">
+            {[12, 20, 8, 28, 16, 32, 10, 24, 18, 6, 22, 14].map((h, i) => (
+              <div
+                key={i}
+                className="w-3 rounded-[2px]"
+                style={{
+                  height: `${h}px`,
+                  background: i === 5 ? "#e2a94e" : "#48684f",
+                }}
+              />
+            ))}
+          </div>
+          <p className="font-display text-xl italic text-fog">No reading sessions logged yet.</p>
+          <p className="mt-1.5 text-[13px] text-dim">
+            Log pages on a book to see pace stats and your daily rhythm chart here.
+          </p>
+        </div>
+      </Reveal>
+    );
+  }
+
   const avg7 = avgWindow(series, 7);
   const prev7 = avgWindow(series, 7, 7);
   const delta = prev7 > 0 ? ((avg7 - prev7) / prev7) * 100 : avg7 > 0 ? 100 : 0;

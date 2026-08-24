@@ -114,6 +114,11 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 }
 .dot-live { animation: pulse-dot 2.2s ease-out infinite; }
 
+@keyframes pulse-ghost {
+  0%, 100% { opacity: 0.18; transform: scaleY(1); }
+  50% { opacity: 0.28; transform: scaleY(1.03); }
+}
+
 /* ---------- reveal on scroll ---------- */
 .reveal {
   opacity: 0;

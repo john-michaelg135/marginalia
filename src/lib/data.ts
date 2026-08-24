@@ -32,6 +32,8 @@ export interface Book {
   rating?: number; // 1..5
   tilt?: boolean; // leans on the shelf
   sessions: Session[];
+  hasPdf?: boolean; // PDF stored in IndexedDB
+  pdfLastPage?: number; // last page viewed in PDF reader
 }
 
 export const YEAR_GOAL = 24;
@@ -80,131 +82,8 @@ export const fmtDateFull = (iso: string) =>
 export const nf = new Intl.NumberFormat("en-US");
 export const fmtNum = (n: number) => nf.format(Math.round(n));
 
-/* ------------------------- seeded randomness ----------------------- */
-
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 let uidCounter = 0;
 export const uid = () => `bk_${Date.now().toString(36)}_${(uidCounter++).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-
-/** Sessions spread between two dates that sum to exactly `total` pages. */
-function spreadSessions(startISO: string, endISO: string, total: number, rnd: () => number): Session[] {
-  const days = daysBetween(startISO, endISO) + 1;
-  const dates: string[] = [];
-  for (let i = 0; i < days; i++) dates.push(addDays(startISO, i));
-  const active = dates.filter((_, i) => i === 0 || i === dates.length - 1 || rnd() < 0.78);
-  const weights = active.map(() => 0.55 + rnd() * 0.9);
-  const wSum = weights.reduce((a, b) => a + b, 0);
-  const sessions: Session[] = active.map((date, i) => ({
-    date,
-    pages: Math.max(2, Math.round((weights[i] / wSum) * total)),
-  }));
-  // fix rounding so pages sum exactly
-  const drift = total - sessions.reduce((a, s) => a + s.pages, 0);
-  if (sessions.length) {
-    const last = sessions[sessions.length - 1];
-    last.pages = Math.max(2, last.pages + drift);
-  }
-  return sessions;
-}
-
-/* ------------------------------ seed ------------------------------- */
-
-export function makeSeed(): Book[] {
-  const rnd = mulberry32(0x5eed26);
-  const T = todayISO();
-  const d = (n: number) => addDays(T, -n);
-
-  const mk = (
-    b: Omit<Book, "id" | "sessions" | "currentPage"> & { currentPage?: number },
-    sessions: Session[]
-  ): Book => ({
-    ...b,
-    id: uid(),
-    sessions,
-    currentPage: b.currentPage ?? sessions.reduce((a, s) => a + s.pages, 0),
-  });
-
-  const reading = (
-    title: string,
-    author: string,
-    pages: number,
-    genre: Genre,
-    startedAgo: number,
-    perDay: number,
-    tilt?: boolean
-  ): Book => {
-    const start = d(startedAgo);
-    const total = Math.min(
-      pages - 24,
-      Math.round(startedAgo * perDay * 0.82)
-    );
-    return mk(
-      { title, author, pages, genre, status: "reading", startDate: start, tilt },
-      spreadSessions(start, T, total, rnd)
-    );
-  };
-
-  const finished = (
-    title: string,
-    author: string,
-    pages: number,
-    genre: Genre,
-    finishedAgo: number,
-    duration: number,
-    rating: number,
-    tilt?: boolean
-  ): Book => {
-    const end = d(finishedAgo);
-    const start = addDays(end, -(duration - 1));
-    return mk(
-      {
-        title, author, pages, genre,
-        status: "finished",
-        startDate: start,
-        finishedDate: end,
-        rating,
-        tilt,
-      },
-      spreadSessions(start, end, pages, rnd)
-    );
-  };
-
-  const queued = (title: string, author: string, pages: number, genre: Genre, tilt?: boolean): Book =>
-    mk({ title, author, pages, genre, status: "queue", currentPage: 0, tilt }, []);
-
-  return [
-    // —— on the nightstand ——
-    reading("The Overstory", "Richard Powers", 502, "Literary Fiction", 26, 21),
-    reading("Piranesi", "Susanna Clarke", 245, "Fantasy", 9, 13, true),
-    reading("The Wager", "David Grann", 329, "History", 14, 15),
-    reading("Exhalation", "Ted Chiang", 350, "Science Fiction", 3, 16),
-
-    // —— finished this season ——
-    finished("The Left Hand of Darkness", "Ursula K. Le Guin", 304, "Science Fiction", 4, 9, 4),
-    finished("Devotions", "Mary Oliver", 455, "Poetry", 12, 18, 5, true),
-    finished("Educated", "Tara Westover", 334, "Memoir", 21, 12, 5),
-    finished("The Name of the Rose", "Umberto Eco", 552, "Mystery", 31, 19, 4),
-    finished("In Cold Blood", "Truman Capote", 343, "Nonfiction", 45, 11, 4),
-    finished("Project Hail Mary", "Andy Weir", 476, "Science Fiction", 58, 15, 5, true),
-    finished("The Remains of the Day", "Kazuo Ishiguro", 258, "Literary Fiction", 73, 10, 5),
-
-    // —— waiting in the queue ——
-    queued("The Secret History", "Donna Tartt", 559, "Literary Fiction", true),
-    queued("Babel", "R. F. Kuang", 545, "Fantasy"),
-    queued("SPQR", "Mary Beard", 606, "History"),
-    queued("The Thursday Murder Club", "Richard Osman", 400, "Mystery"),
-  ];
-}
 
 /* --------------------------- persistence --------------------------- */
 
@@ -215,16 +94,22 @@ export function loadBooks(): Book[] {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.v === 1 && Array.isArray(parsed.books) && parsed.books.length) {
-        return parsed.books as Book[];
+      if (parsed && parsed.v === 1 && Array.isArray(parsed.books)) {
+        // Strip any legacy inline pdfFile data that would blow up localStorage on re-save
+        const cleaned = (parsed.books as (Book & { pdfFile?: string })[]).map((b) => {
+          if ("pdfFile" in b) {
+            const { pdfFile, ...rest } = b;
+            return { ...rest, hasPdf: !!pdfFile } as Book;
+          }
+          return b as Book;
+        });
+        return cleaned;
       }
     }
   } catch {
-    /* fall through to seed */
+    /* fall through */
   }
-  const seed = makeSeed();
-  saveBooks(seed);
-  return seed;
+  return [];
 }
 
 export function saveBooks(books: Book[]) {
