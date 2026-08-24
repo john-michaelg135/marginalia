@@ -524,7 +524,24 @@ export default function App() {
           onClose={() => {
             const book = books.find((b) => b.id === readerBookId);
             if (book?.pdfLastPage && book.pdfLastPage > book.currentPage) {
-              patchBook(book.id, (b) => ({ ...b, currentPage: b.pdfLastPage ?? b.currentPage }));
+              const delta = book.pdfLastPage - book.currentPage;
+              const today = todayISO();
+              patchBook(book.id, (b) => {
+                const has = b.sessions.some((s) => s.date === today);
+                const sessions = has
+                  ? b.sessions.map((s) => (s.date === today ? { ...s, pages: s.pages + delta } : s))
+                  : [...b.sessions, { date: today, pages: delta }];
+                const newPage = b.pdfLastPage ?? b.currentPage;
+                const finishedNow = newPage >= b.pages;
+                return {
+                  ...b,
+                  currentPage: newPage,
+                  sessions,
+                  status: finishedNow ? "finished" : b.status,
+                  finishedDate: finishedNow ? today : b.finishedDate,
+                };
+              });
+              pushToast(`Reader session logged — ${delta} pages read.`, "sage");
             }
             setReaderBookId(null);
           }}
