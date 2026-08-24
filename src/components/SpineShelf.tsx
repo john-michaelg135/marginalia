@@ -10,8 +10,13 @@ export interface ShelfGroup {
 
 function Spine({ book, onOpen, index }: { book: Book; onOpen: (id: string) => void; index: number }) {
   const g = GENRES[book.genre];
-  const height = Math.round(108 + (book.pages / 606) * 72);
-  const width = Math.round(Math.max(36, Math.min(52, 30 + book.pages / 30)));
+  // Height and width scale logarithmically with page count for realistic proportions
+  // A 50-page booklet is thin and short; a 1000-page tome is thick and tall
+  const pages = book.pages;
+  const height = Math.round(120 + Math.log(pages + 1) * 18); // ~120px at 1pg, ~180px at 600pg, ~195px at 1500pg
+  const width = Math.round(38 + Math.sqrt(pages) * 1.2); // ~40px at 4pg, ~52px at 150pg, ~76px at 1000pg
+  const clampedWidth = Math.max(42, Math.min(80, width));
+  const clampedHeight = Math.max(120, Math.min(210, height));
   const pct = Math.round((book.currentPage / book.pages) * 100);
 
   const statusLine =
@@ -27,12 +32,12 @@ function Spine({ book, onOpen, index }: { book: Book; onOpen: (id: string) => vo
       onClick={() => onOpen(book.id)}
       aria-label={`${book.title} by ${book.author} — ${statusLine}. Open details.`}
       title=""
-      className={`group/spine relative flex shrink-0 cursor-pointer items-start justify-start overflow-hidden rounded-[3px] rounded-t-[5px] transition-transform duration-300 ease-out hover:z-10 hover:-translate-y-2.5 focus-visible:-translate-y-2.5 ${
+      className={`group/spine relative flex shrink-0 cursor-pointer items-start justify-start rounded-[3px] rounded-t-[5px] transition-transform duration-300 ease-out hover:z-10 hover:-translate-y-2.5 focus-visible:-translate-y-2.5 ${
         book.tilt ? "origin-bottom-right -rotate-[4deg] hover:-rotate-[1deg]" : ""
       } ${book.status === "queue" ? "opacity-75 saturate-[0.72] hover:opacity-100 hover:saturate-100" : ""}`}
       style={{
-        height,
-        width,
+        height: clampedHeight,
+        width: clampedWidth,
         background: `linear-gradient(90deg, ${g.color}e8 0%, ${g.color} 18%, ${g.color}d9 78%, ${g.color}b3 100%)`,
         boxShadow: "inset 2px 0 3px rgba(255,252,240,.35), inset -3px 0 6px rgba(12,21,18,.38), 0 10px 18px -8px rgba(0,0,0,.7)",
         transitionDelay: `${index * 12}ms`,
@@ -66,10 +71,17 @@ function Spine({ book, onOpen, index }: { book: Book; onOpen: (id: string) => vo
         </span>
       </span>
 
-      {/* hover tooltip */}
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2.5 w-max max-w-[220px] -translate-x-1/2 rounded-md border border-line bg-raise px-3 py-2 text-left opacity-0 shadow-card transition-[opacity,transform] duration-200 group-hover/spine:-translate-y-0.5 group-hover/spine:opacity-100 group-focus-visible/spine:opacity-100">
+      {/* hover tooltip - positioned to the right to avoid clipping */}
+      <span className="pointer-events-none absolute left-full top-0 z-20 ml-2.5 w-max max-w-[220px] rounded-md border border-line bg-raise px-3 py-2.5 text-left opacity-0 shadow-card transition-[opacity] duration-200 group-hover/spine:opacity-100 group-focus-visible/spine:opacity-100">
         <span className="line-clamp-2 block font-display text-[13px] font-semibold leading-tight text-paper">{book.title}</span>
         <span className="mt-0.5 block text-[11px] text-fog">{book.author}</span>
+        <span className="mt-1.5 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full border border-linesoft px-2 py-[2px] font-mono text-[9px] uppercase tracking-[0.1em] text-dim">
+            <span className="h-[5px] w-[5px] rounded-full" style={{ background: g.color }} />
+            {g.short}
+          </span>
+          <span className="font-mono text-[9px] text-dim">{book.pages} pg</span>
+        </span>
         <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.12em] text-brass">{statusLine}</span>
       </span>
     </button>

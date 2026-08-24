@@ -36,7 +36,26 @@ export interface Book {
   pdfLastPage?: number; // last page viewed in PDF reader
 }
 
-export const YEAR_GOAL = 24;
+export const DEFAULT_YEAR_GOAL = 24;
+
+const GOAL_KEY = "marginalia.goal.v1";
+
+export function loadGoal(): number {
+  try {
+    const raw = localStorage.getItem(GOAL_KEY);
+    if (raw) {
+      const n = parseInt(raw, 10);
+      if (Number.isFinite(n) && n >= 1 && n <= 500) return n;
+    }
+  } catch { /* noop */ }
+  return DEFAULT_YEAR_GOAL;
+}
+
+export function saveGoal(goal: number) {
+  try {
+    localStorage.setItem(GOAL_KEY, String(Math.max(1, Math.min(500, Math.round(goal)))));
+  } catch { /* noop */ }
+}
 
 export const GENRES: Record<Genre, { color: string; short: string }> = {
   "Literary Fiction": { color: "#e2a94e", short: "Fiction" },

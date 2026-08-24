@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Book, Genre } from "./lib/data";
 import {
-  YEAR_GOAL,
+  DEFAULT_YEAR_GOAL,
   addDays,
   clearLedger,
   fmtNum,
   loadBooks,
+  loadGoal,
   saveBooks,
+  saveGoal,
   streakInfo,
   todayISO,
   totalsOf,
@@ -40,30 +42,73 @@ function IntroStat({ label, value, suffix }: { label: string; value: number; suf
   );
 }
 
-function GoalRing({ done, goal }: { done: number; goal: number }) {
+function GoalRing({ done, goal, onChangeGoal }: { done: number; goal: number; onChangeGoal: (n: number) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [input, setInput] = useState(String(goal));
   const R = 13;
   const C = 2 * Math.PI * R;
   const frac = Math.min(1, done / goal);
+
+  const submit = () => {
+    const n = parseInt(input, 10);
+    if (Number.isFinite(n) && n >= 1 && n <= 500) {
+      onChangeGoal(n);
+    } else {
+      setInput(String(goal));
+    }
+    setEditing(false);
+  };
+
   return (
-    <div className="flex items-center gap-2 rounded-full border border-linesoft bg-pine/70 py-1.5 pl-1.5 pr-3">
-      <svg viewBox="0 0 34 34" className="h-7 w-7 -rotate-90">
-        <circle cx="17" cy="17" r={R} fill="none" stroke="#26402f" strokeWidth="3.5" />
-        <circle
-          cx="17"
-          cy="17"
-          r={R}
-          fill="none"
-          stroke="#e2a94e"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          strokeDasharray={C}
-          strokeDashoffset={C - frac * C}
-          style={{ transition: "stroke-dashoffset 1s cubic-bezier(.22,1,.36,1)" }}
-        />
-      </svg>
-      <span className="font-mono text-[11px] font-medium text-fog tabnum">
-        {done}<span className="text-dim">/{goal} books</span>
-      </span>
+    <div className="relative">
+      <button
+        onClick={() => { setInput(String(goal)); setEditing(true); }}
+        className="flex cursor-pointer items-center gap-2 rounded-full border border-linesoft bg-pine/70 py-1.5 pl-1.5 pr-3 transition-colors hover:border-brass/40"
+        title="Click to change your reading goal"
+      >
+        <svg viewBox="0 0 34 34" className="h-7 w-7 -rotate-90">
+          <circle cx="17" cy="17" r={R} fill="none" stroke="#26402f" strokeWidth="3.5" />
+          <circle
+            cx="17"
+            cy="17"
+            r={R}
+            fill="none"
+            stroke="#e2a94e"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeDasharray={C}
+            strokeDashoffset={C - frac * C}
+            style={{ transition: "stroke-dashoffset 1s cubic-bezier(.22,1,.36,1)" }}
+          />
+        </svg>
+        <span className="font-mono text-[11px] font-medium text-fog tabnum">
+          {done}<span className="text-dim">/{goal} books</span>
+        </span>
+      </button>
+      {editing && (
+        <div className="absolute right-0 top-full z-30 mt-2 rounded-md border border-line bg-raise p-3 shadow-card">
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-dim">Yearly goal</p>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              max={500}
+              autoFocus
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") setEditing(false); }}
+              className="w-16 rounded-md border border-line bg-ink/70 px-2 py-1.5 text-center font-mono text-[13px] text-paper focus:border-brass/60 focus:outline-none"
+            />
+            <span className="font-mono text-[11px] text-dim">books</span>
+          </div>
+          <button
+            onClick={submit}
+            className="mt-2 w-full cursor-pointer rounded-md bg-brass px-3 py-1.5 font-mono text-[11px] font-semibold text-ink transition-colors hover:brightness-110"
+          >
+            Set goal
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -72,6 +117,7 @@ function GoalRing({ done, goal }: { done: number; goal: number }) {
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>(() => loadBooks());
+  const [yearGoal, setYearGoal] = useState(() => loadGoal());
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -285,7 +331,7 @@ export default function App() {
             </span>
           </div>
           <div className="flex items-center gap-2.5">
-            <GoalRing done={totals.finished.length} goal={YEAR_GOAL} />
+            <GoalRing done={totals.finished.length} goal={yearGoal} onChangeGoal={(n) => { setYearGoal(n); saveGoal(n); }} />
             <span className="hidden items-center gap-1.5 rounded-full border border-linesoft bg-pine/70 px-3 py-1.5 sm:flex" title="Consecutive reading days">
               <IconFlame className={`h-4 w-4 text-ember ${streak.current > 0 ? "flame-live" : "opacity-40"}`} />
               <span className="font-mono text-[11.5px] font-medium text-fog tabnum">{streak.current}</span>
@@ -405,7 +451,7 @@ export default function App() {
               <div>
                 <p className="mb-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-fog">Reading</p>
                 <ul className="space-y-1.5 text-[12.5px] text-dim">
-                  <li>Goal: {YEAR_GOAL} books in {addDays(todayISO(), 0).slice(0, 4)}</li>
+                  <li>Goal: {yearGoal} books in {addDays(todayISO(), 0).slice(0, 4)}</li>
                   <li>{totals.finished.length} finished</li>
                   <li>{totals.reading.length} in progress</li>
                   <li>{totals.queue.length} queued</li>
