@@ -241,6 +241,7 @@ export default function App() {
   /* ------- derived ------- */
 
   const detailBook = detailId ? books.find((b) => b.id === detailId) ?? null : null;
+  const readerBook = readerBookId ? books.find((b) => b.id === readerBookId) ?? null : null;
 
   const shelfGroups: ShelfGroup[] = [
     { label: "On the nightstand", note: "in progress — tap a spine for its ledger card", books: totals.reading },
@@ -368,14 +369,60 @@ export default function App() {
 
       {/* ------------------------------ footer ------------------------------ */}
       <footer className="relative z-10 border-t border-linesoft">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-8">
-          <p className="font-mono text-[11px] leading-relaxed text-dim">
-            Marginalia · a local-first reading ledger — your data never leaves this browser.
-          </p>
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-[11px] text-dim tabnum">
-              goal {YEAR_GOAL} books · by {addDays(todayISO(), 0).slice(0, 4)}
-            </span>
+        <div className="mx-auto max-w-6xl px-5 py-10">
+          {/* top row */}
+          <div className="flex flex-wrap items-start justify-between gap-8">
+            {/* brand */}
+            <div className="max-w-xs">
+              <div className="flex items-center gap-2.5">
+                <IconBookmark className="h-5 w-5 text-brass" />
+                <span className="font-display text-[19px] font-bold italic tracking-tight text-paper">Marginalia</span>
+              </div>
+              <p className="mt-2.5 text-[13px] leading-relaxed text-dim">
+                A personal reading ledger. Track your pace, set goals, and read PDFs — all in one place. Your data stays in your browser.
+              </p>
+            </div>
+
+            {/* links / info columns */}
+            <div className="flex gap-12">
+              <div>
+                <p className="mb-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-fog">Reading</p>
+                <ul className="space-y-1.5 text-[12.5px] text-dim">
+                  <li>Goal: {YEAR_GOAL} books in {addDays(todayISO(), 0).slice(0, 4)}</li>
+                  <li>{totals.finished.length} finished</li>
+                  <li>{totals.reading.length} in progress</li>
+                  <li>{totals.queue.length} queued</li>
+                </ul>
+              </div>
+              <div>
+                <p className="mb-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-fog">App</p>
+                <ul className="space-y-1.5 text-[12.5px] text-dim">
+                  <li>Local-first</li>
+                  <li>No account needed</li>
+                  <li>Works offline</li>
+                  <li>
+                    <a
+                      href="https://github.com/john-michaelg135/marginalia"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-colors hover:text-brass"
+                    >
+                      Source on GitHub
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* divider */}
+          <div className="my-6 h-px bg-linesoft" />
+
+          {/* bottom row */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="font-mono text-[10.5px] text-dim">
+              &copy; {new Date().getFullYear()} Marginalia. Built for readers, by a reader.
+            </p>
             <button
               onClick={resetLedger}
               className={`cursor-pointer rounded-md border px-3.5 py-2 font-mono text-[10.5px] font-semibold uppercase tracking-[0.16em] transition-all duration-200 ${
@@ -408,16 +455,13 @@ export default function App() {
         />
       )}
       {addOpen && <AddBookModal onClose={() => setAddOpen(false)} onAdd={addBook} />}
-      {readerBookId && (() => {
-        const readerBook = books.find((b) => b.id === readerBookId);
-        return readerBook?.hasPdf ? (
-          <PdfReader
-            book={readerBook}
-            onClose={() => setReaderBookId(null)}
-            onPageChange={handleReaderPageChange}
-          />
-        ) : null;
-      })()}
+      {readerBookId && readerBook?.hasPdf && (
+        <PdfReader
+          book={readerBook}
+          onClose={() => setReaderBookId(null)}
+          onPageChange={handleReaderPageChange}
+        />
+      )}
     </div>
   );
 }

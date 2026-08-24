@@ -11,6 +11,10 @@ export default function Taste({ books }: { books: Book[] }) {
   const [hovered, setHovered] = useState<string | null>(null);
   const stats = useMemo(() => genreStats(books), [books]);
 
+  const total = stats.reduce((a, s) => a + (mode === "pages" ? s.pages : s.books), 0);
+  const displayTotal = useCountUp(total);
+  const { ref, inView } = useReveal<HTMLDivElement>();
+
   if (stats.length === 0) {
     return (
       <Reveal>
@@ -30,10 +34,6 @@ export default function Taste({ books }: { books: Book[] }) {
       </Reveal>
     );
   }
-
-  const total = stats.reduce((a, s) => a + (mode === "pages" ? s.pages : s.books), 0);
-  const displayTotal = useCountUp(total);
-  const { ref, inView } = useReveal<HTMLDivElement>();
 
   const R = 70;
   const C = 2 * Math.PI * R;

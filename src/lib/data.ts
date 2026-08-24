@@ -96,27 +96,56 @@ export function loadBooks(): Book[] {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.v === 1 && Array.isArray(parsed.books)) {
         // Strip any legacy inline pdfFile data that would blow up localStorage on re-save
+        let needsMigration = false;
         const cleaned = (parsed.books as (Book & { pdfFile?: string })[]).map((b) => {
           if ("pdfFile" in b) {
+            needsMigration = true;
             const { pdfFile, ...rest } = b;
             return { ...rest, hasPdf: !!pdfFile } as Book;
           }
           return b as Book;
         });
+        // Re-save immediately if we migrated to prevent quota issues
+        if (needsMigration) {
+          saveBooks(cleaned);
+        }
         return cleaned;
       }
     }
   } catch {
-    /* fall through */
+    // If localStorage is corrupted or too large to parse, start fresh
+    try { localStorage.removeItem(KEY); } catch { /* noop */ }
   }
   return [];
 }
 
 export function saveBooks(books: Book[]) {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ v: 1, books }));
+    // Ensure no accidental PDF data leaks into localStorage
+    const safe = books.map((b) => {
+      if ("pdfFile" in b) {
+        const { pdfFile, ...rest } = b as Book & { pdfFile?: string };
+        return rest;
+      }
+      return b;
+    });
+    const json = JSON.stringify({ v: 1, books: safe });
+    localStorage.setItem(KEY, json);
   } catch {
-    /* storage unavailable — keep in memory */
+    // Quota exceeded — try clearing and re-saving
+    try {
+      localStorage.removeItem(KEY);
+      const safe = books.map((b) => {
+        if ("pdfFile" in b) {
+          const { pdfFile, ...rest } = b as Book & { pdfFile?: string };
+          return rest;
+        }
+        return b;
+      });
+      localStorage.setItem(KEY, JSON.stringify({ v: 1, books: safe }));
+    } catch {
+      console.warn("[Marginalia] Unable to persist data to localStorage.");
+    }
   }
 }
 
