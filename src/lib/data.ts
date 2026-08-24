@@ -85,6 +85,8 @@ export const fmtNum = (n: number) => nf.format(Math.round(n));
 let uidCounter = 0;
 export const uid = () => `bk_${Date.now().toString(36)}_${(uidCounter++).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
+import { sanitizeText, sanitizeNumber, validateBookShape } from "./sanitize";
+
 /* --------------------------- persistence --------------------------- */
 
 const KEY = "marginalia.ledger.v1";
@@ -95,17 +97,30 @@ export function loadBooks(): Book[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.v === 1 && Array.isArray(parsed.books)) {
-        // Strip any legacy inline pdfFile data that would blow up localStorage on re-save
         let needsMigration = false;
-        const cleaned = (parsed.books as (Book & { pdfFile?: string })[]).map((b) => {
-          if ("pdfFile" in b) {
+        const cleaned: Book[] = [];
+
+        for (const b of parsed.books) {
+          // Strip legacy pdfFile
+          let book = b;
+          if ("pdfFile" in book) {
             needsMigration = true;
-            const { pdfFile, ...rest } = b;
-            return { ...rest, hasPdf: !!pdfFile } as Book;
+            const { pdfFile, ...rest } = book;
+            book = { ...rest, hasPdf: !!pdfFile };
           }
-          return b as Book;
-        });
-        // Re-save immediately if we migrated to prevent quota issues
+
+          // Validate shape — reject malformed entries
+          if (!validateBookShape(book)) continue;
+
+          // Sanitize text fields to prevent stored XSS
+          book.title = sanitizeText(book.title);
+          book.author = sanitizeText(book.author);
+          book.pages = sanitizeNumber(book.pages, 1, 100000);
+          book.currentPage = sanitizeNumber(book.currentPage, 0, book.pages);
+
+          cleaned.push(book as Book);
+        }
+
         if (needsMigration) {
           saveBooks(cleaned);
         }

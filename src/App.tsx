@@ -14,6 +14,7 @@ import {
 } from "./lib/data";
 import { useCountUp } from "./lib/hooks";
 import { savePdf } from "./lib/pdfStore";
+import { sanitizeText } from "./lib/sanitize";
 import { IconFlame, IconPlus, IconBookmark } from "./components/icons";
 import { Reveal, SectionHead, ToastHost, type Toast } from "./components/ui";
 import SpineShelf, { type ShelfGroup } from "./components/SpineShelf";
@@ -221,9 +222,9 @@ export default function App() {
     const bookId = uid();
     const book: Book = {
       id: bookId,
-      title: data.title,
-      author: data.author,
-      pages: data.pages,
+      title: sanitizeText(data.title),
+      author: sanitizeText(data.author),
+      pages: Math.max(1, Math.min(100000, Math.round(data.pages))),
       genre: data.genre,
       status: data.status,
       currentPage: 0,
