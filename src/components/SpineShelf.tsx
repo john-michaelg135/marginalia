@@ -106,28 +106,53 @@ export default function SpineShelf({ groups, onOpen }: { groups: ShelfGroup[]; o
                 </div>
               </div>
             ) : (
-              <div className="relative">
-                <div className="flex items-end gap-2 px-1 pt-4 pb-0">
-                  {/* Ghost spines as placeholder */}
-                  {[52, 68, 44, 60, 38, 56, 46].map((h, i) => (
+              <div className="relative overflow-hidden">
+                {/* Cobweb decorations */}
+                <svg className="pointer-events-none absolute top-0 left-0 h-16 w-16 opacity-[0.12]" viewBox="0 0 60 60">
+                  <path d="M0 0 Q30 5, 60 0 M0 0 Q5 30, 0 60 M0 0 Q25 25, 50 50 M0 0 Q15 8, 30 10 M0 0 Q8 15, 10 30" fill="none" stroke="#a9bca8" strokeWidth="0.8" />
+                  <path d="M5 0 Q20 15, 5 30 M0 5 Q15 20, 30 5" fill="none" stroke="#a9bca8" strokeWidth="0.5" strokeDasharray="2 3" />
+                </svg>
+                <svg className="pointer-events-none absolute top-0 right-0 h-16 w-16 -scale-x-100 opacity-[0.12]" viewBox="0 0 60 60">
+                  <path d="M0 0 Q30 5, 60 0 M0 0 Q5 30, 0 60 M0 0 Q25 25, 50 50 M0 0 Q15 8, 30 10 M0 0 Q8 15, 10 30" fill="none" stroke="#a9bca8" strokeWidth="0.8" />
+                  <path d="M5 0 Q20 15, 5 30 M0 5 Q15 20, 30 5" fill="none" stroke="#a9bca8" strokeWidth="0.5" strokeDasharray="2 3" />
+                </svg>
+                <svg className="pointer-events-none absolute bottom-3 right-12 h-10 w-10 opacity-[0.08]" viewBox="0 0 40 40">
+                  <path d="M40 0 Q20 10, 0 40 M40 0 Q30 20, 40 40 M40 0 Q25 5, 10 10" fill="none" stroke="#a9bca8" strokeWidth="0.7" />
+                </svg>
+                {/* Dust particles */}
+                <div className="pointer-events-none absolute top-8 left-[20%] h-1 w-1 rounded-full bg-fog/20 dust-particle" />
+                <div className="pointer-events-none absolute top-14 left-[55%] h-0.5 w-0.5 rounded-full bg-fog/15 dust-particle" style={{ animationDelay: "2s" }} />
+                <div className="pointer-events-none absolute top-10 left-[75%] h-1 w-1 rounded-full bg-fog/10 dust-particle" style={{ animationDelay: "4.5s" }} />
+
+                <div className="relative flex items-end px-1 pb-0" style={{ height: "230px" }}>
+                  {/* Ghost - each shelf gets unique timing via gi index */}
+                  <div
+                    className="ghost-x pointer-events-none absolute z-10"
+                    style={{
+                      top: "90px",
+                      left: "0",
+                      animationDuration: `${17 + gi * 4}s`,
+                      animationDelay: `${gi * -5}s`,
+                    }}
+                  >
                     <div
-                      key={i}
-                      className="shrink-0 rounded-[3px] rounded-t-[5px] opacity-[0.18]"
+                      className="ghost-y"
                       style={{
-                        height: `${h}px`,
-                        width: "16px",
-                        background: "linear-gradient(90deg, #3d5a42, #26402f)",
-                        boxShadow: "inset 1px 0 2px rgba(255,252,240,.08)",
-                        animationName: "pulse-ghost",
-                        animationDuration: `${2.4 + i * 0.3}s`,
-                        animationTimingFunction: "ease-in-out",
-                        animationIterationCount: "infinite",
-                        animationDelay: `${i * 0.2}s`,
+                        animationDuration: `${11 + gi * 3}s`,
+                        animationDelay: `${gi * -3}s`,
                       }}
-                    />
-                  ))}
-                  <span className="ml-3 self-center font-mono text-[11px] italic text-dim/60">
-                    waiting for books…
+                    >
+                      <svg viewBox="0 0 32 40" className="h-14 w-12">
+                        <path d="M16 3 C7 3, 3 10, 3 18 L3 31 Q7 27, 9 31 Q11 35, 13 31 Q15 27, 16 31 Q17 35, 19 31 Q21 27, 23 31 Q25 35, 27 31 Q29 27, 29 31 L29 18 C29 10, 25 3, 16 3 Z" fill="#4a5e50" opacity="0.7" />
+                        <circle cx="11" cy="15" r="2.5" fill="#1a2b20" />
+                        <circle cx="21" cy="15" r="2.5" fill="#1a2b20" />
+                        <circle cx="12" cy="14" r="0.8" fill="#6f8773" />
+                        <circle cx="22" cy="14" r="0.8" fill="#6f8773" />
+                      </svg>
+                    </div>
+                  </div>
+                  <span className="relative z-0 ml-3 self-end mb-1 font-mono text-[11px] italic text-dim/60">
+                    no books here yet…
                   </span>
                 </div>
                 <div className="shelf-board" />
