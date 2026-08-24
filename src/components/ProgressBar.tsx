@@ -21,13 +21,12 @@ export default function ProgressBar({ value, max, color = "#e2a94e", tall = fals
   const pageFromClientX = useCallback(
     (clientX: number) => {
       const el = trackRef.current;
-      if (!el) return value;
+      if (!el) return 0;
       const rect = el.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       return clampPage(Math.round(pct * max));
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [max, value]
+    [max]
   );
 
   const finishGesture = () => {
@@ -101,7 +100,7 @@ export default function ProgressBar({ value, max, color = "#e2a94e", tall = fals
       />
       {/* quarter markers */}
       {[25, 50, 75].map((q) => (
-        <span key={q} className="pointer-events-none absolute top-0 h-full w-px bg-ink/40" style={{ left: `${q}%` }} />
+        <span key={q} className="pointer-events-none absolute top-0 z-[1] h-full w-px bg-ink/60" style={{ left: `${q}%` }} />
       ))}
       {/* handle */}
       <div

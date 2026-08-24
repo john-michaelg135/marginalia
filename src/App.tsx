@@ -98,22 +98,37 @@ export default function App() {
   /* ------- handlers ------- */
 
   const liveProgress = (id: string, page: number) =>
-    patchBook(id, (b) => ({ ...b, currentPage: clampPage(b, page) }));
+    patchBook(id, (b) => ({ ...b, currentPage: clampPage(b, page), pdfLastPage: b.hasPdf ? clampPage(b, page) : b.pdfLastPage }));
 
   const commitDrag = (id: string, delta: number) => {
-    if (delta > 0) logPages(id, delta);
-    else if (delta < 0) {
-      let finalPage = 0;
-      let title = "";
-      setBooks((bs) =>
-        bs.map((b) => {
-          if (b.id !== id) return b;
-          finalPage = clampPage(b, b.currentPage + delta);
-          title = b.title;
-          return { ...b, currentPage: finalPage };
-        })
-      );
-      pushToast(`Rewound to p. ${finalPage} — ${title}.`, "brass");
+    if (delta > 0) {
+      // Page was already moved by liveProgress — just log the session
+      const today = todayISO();
+      patchBook(id, (b) => {
+        const has = b.sessions.some((s) => s.date === today);
+        const sessions = has
+          ? b.sessions.map((s) => (s.date === today ? { ...s, pages: s.pages + delta } : s))
+          : [...b.sessions, { date: today, pages: delta }];
+        const finishedNow = b.currentPage >= b.pages;
+        return {
+          ...b,
+          sessions,
+          status: finishedNow ? "finished" : b.status,
+          finishedDate: finishedNow ? today : b.finishedDate,
+        };
+      });
+      const book = books.find((b) => b.id === id);
+      if (book) {
+        const target = Math.min(book.currentPage + delta, book.pages);
+        if (target >= book.pages) {
+          pushToast(`★ ${book.title} finished — ${fmtNum(book.pages)} pages. Rate it in the ledger.`, "sage");
+        } else {
+          pushToast(`Logged ${delta} pages · p. ${target} of ${fmtNum(book.pages)} — ${fmtNum(book.pages - target)} to go.`, "sage");
+        }
+      }
+    } else if (delta < 0) {
+      const book = books.find((b) => b.id === id);
+      pushToast(`Rewound to p. ${book?.currentPage ?? 0} — ${book?.title ?? ""}.`, "brass");
     }
   };
 
@@ -142,6 +157,7 @@ export default function App() {
       return {
         ...b,
         currentPage: target,
+        pdfLastPage: b.hasPdf ? target : b.pdfLastPage,
         sessions,
         status: finishedNow ? "finished" : b.status,
         finishedDate: finishedNow ? today : b.finishedDate,
@@ -458,7 +474,13 @@ export default function App() {
       {readerBookId && readerBook?.hasPdf && (
         <PdfReader
           book={readerBook}
-          onClose={() => setReaderBookId(null)}
+          onClose={() => {
+            const book = books.find((b) => b.id === readerBookId);
+            if (book?.pdfLastPage && book.pdfLastPage > book.currentPage) {
+              patchBook(book.id, (b) => ({ ...b, currentPage: b.pdfLastPage ?? b.currentPage }));
+            }
+            setReaderBookId(null);
+          }}
           onPageChange={handleReaderPageChange}
         />
       )}

@@ -84,11 +84,19 @@ export function BookDetailModal({
       <div className="p-6 sm:p-7">
         <div className="flex items-start gap-4 sm:gap-5">
           <div
-            className="flex h-24 w-16 shrink-0 items-start justify-center overflow-hidden rounded-[4px] rounded-t-[6px] pt-2 shadow-spine"
-            style={{ background: `linear-gradient(100deg, ${color}e8, ${color}c4)`, boxShadow: `inset 2px 0 3px rgba(255,252,240,.3), inset -3px 0 6px rgba(12,21,18,.35), 0 10px 20px -8px rgba(0,0,0,.7)` }}
+            className="relative flex h-28 w-[52px] shrink-0 items-start justify-center overflow-hidden rounded-[4px] rounded-t-[6px] pt-3"
+            style={{
+              background: `linear-gradient(90deg, ${color}e8 0%, ${color} 18%, ${color}d9 78%, ${color}b3 100%)`,
+              boxShadow: `inset 2px 0 4px rgba(255,252,240,.35), inset -3px 0 8px rgba(12,21,18,.4), 0 12px 24px -8px rgba(0,0,0,.7), 0 4px 8px rgba(0,0,0,.3)`,
+            }}
           >
-            <span className="v-rl font-display text-[10px] font-semibold leading-tight text-ink/85">
-              {book.title.slice(0, 30)}
+            {/* Bands */}
+            <span className="pointer-events-none absolute inset-x-[3px] top-2 h-[2px] bg-ink/30" />
+            <span className="pointer-events-none absolute inset-x-[3px] top-[10px] h-px bg-ink/20" />
+            <span className="pointer-events-none absolute inset-x-[3px] bottom-2.5 h-[2px] bg-ink/30" />
+            {/* Spine text */}
+            <span className="v-rl relative z-[1] font-display text-[11px] font-semibold leading-tight text-ink/85">
+              {book.title.slice(0, 28)}
             </span>
           </div>
           <div className="min-w-0 pr-8">
@@ -115,12 +123,14 @@ export function BookDetailModal({
         </div>
 
         <div className="mt-6 space-y-5">
-          {/* PDF attachment section */}
+          {/* PDF attachment section - only show for reading and finished books */}
+          {book.status !== "queue" && (
           <div className="flex items-center gap-2">
             {book.hasPdf ? (
               <button
                 onClick={() => onOpenReader(book.id)}
-                className="flex cursor-pointer items-center gap-2 rounded-md border border-brass/50 bg-brass/10 px-4 py-2.5 font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-brass transition-all hover:-translate-y-px hover:bg-brass/20"
+                className="flex cursor-pointer items-center gap-2 rounded-md px-4 py-2.5 font-mono text-[12px] font-semibold uppercase tracking-[0.14em] transition-colors hover:brightness-110"
+                style={{ background: color, color: "#0c1512" }}
               >
                 <IconBook className="h-4 w-4" />
                 Open reader
@@ -136,7 +146,7 @@ export function BookDetailModal({
                 />
                 <button
                   onClick={() => pdfInputRef.current?.click()}
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-linesoft bg-moss px-4 py-2.5 font-mono text-[12px] font-medium text-fog transition-all hover:-translate-y-px hover:border-brass/60 hover:text-brass"
+                  className="flex cursor-pointer items-center gap-2 rounded-md border border-linesoft bg-moss px-4 py-2.5 font-mono text-[12px] font-medium text-fog transition-colors hover:border-brass/60 hover:text-brass"
                 >
                   <IconFileText className="h-4 w-4" />
                   Attach PDF
@@ -149,6 +159,7 @@ export function BookDetailModal({
               </span>
             )}
           </div>
+          )}
           {book.status === "reading" && (
             <>
               <div>
@@ -173,11 +184,25 @@ export function BookDetailModal({
                     <button
                       key={n}
                       onClick={() => onLog(book.id, n)}
-                      className="cursor-pointer rounded-md border border-line bg-moss px-3.5 py-2 font-mono text-[12.5px] font-medium text-fog transition-all duration-150 hover:-translate-y-px hover:border-brass/60 hover:text-brass"
+                      className="cursor-pointer rounded-md border border-line bg-moss px-3.5 py-2 font-mono text-[12.5px] font-medium text-fog transition-colors duration-150 hover:border-brass/60 hover:text-brass"
                     >
                       {n > 0 ? `+${n}` : n} pages
                     </button>
                   ))}
+                  <button
+                    onClick={() => onLog(book.id, -1)}
+                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-line bg-moss font-mono text-[16px] font-bold text-fog transition-colors duration-150 hover:border-brass/60 hover:text-brass"
+                    aria-label="Minus 1 page"
+                  >
+                    −
+                  </button>
+                  <button
+                    onClick={() => onLog(book.id, 1)}
+                    className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-line bg-moss font-mono text-[16px] font-bold text-fog transition-colors duration-150 hover:border-brass/60 hover:text-brass"
+                    aria-label="Plus 1 page"
+                  >
+                    +
+                  </button>
                   {book.currentPage < book.pages && (
                     <button
                       onClick={() => onFinish(book.id)}

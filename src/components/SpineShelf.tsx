@@ -11,7 +11,7 @@ export interface ShelfGroup {
 function Spine({ book, onOpen, index }: { book: Book; onOpen: (id: string) => void; index: number }) {
   const g = GENRES[book.genre];
   const height = Math.round(108 + (book.pages / 606) * 72);
-  const width = Math.round(Math.max(23, Math.min(42, 20 + book.pages / 28)));
+  const width = Math.round(Math.max(36, Math.min(52, 30 + book.pages / 30)));
   const pct = Math.round((book.currentPage / book.pages) * 100);
 
   const statusLine =
@@ -27,7 +27,7 @@ function Spine({ book, onOpen, index }: { book: Book; onOpen: (id: string) => vo
       onClick={() => onOpen(book.id)}
       aria-label={`${book.title} by ${book.author} — ${statusLine}. Open details.`}
       title=""
-      className={`group/spine relative flex shrink-0 cursor-pointer items-start justify-start overflow-hidden rounded-[3px] rounded-t-[5px] transition-all duration-300 ease-out hover:z-10 hover:-translate-y-2.5 focus-visible:-translate-y-2.5 ${
+      className={`group/spine relative flex shrink-0 cursor-pointer items-start justify-start overflow-hidden rounded-[3px] rounded-t-[5px] transition-transform duration-300 ease-out hover:z-10 hover:-translate-y-2.5 focus-visible:-translate-y-2.5 ${
         book.tilt ? "origin-bottom-right -rotate-[4deg] hover:-rotate-[1deg]" : ""
       } ${book.status === "queue" ? "opacity-75 saturate-[0.72] hover:opacity-100 hover:saturate-100" : ""}`}
       style={{
@@ -67,7 +67,7 @@ function Spine({ book, onOpen, index }: { book: Book; onOpen: (id: string) => vo
       </span>
 
       {/* hover tooltip */}
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2.5 w-max max-w-[220px] -translate-x-1/2 rounded-md border border-line bg-raise px-3 py-2 text-left opacity-0 shadow-card transition-all duration-200 group-hover/spine:-translate-y-0.5 group-hover/spine:opacity-100 group-focus-visible/spine:opacity-100">
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2.5 w-max max-w-[220px] -translate-x-1/2 rounded-md border border-line bg-raise px-3 py-2 text-left opacity-0 shadow-card transition-[opacity,transform] duration-200 group-hover/spine:-translate-y-0.5 group-hover/spine:opacity-100 group-focus-visible/spine:opacity-100">
         <span className="line-clamp-2 block font-display text-[13px] font-semibold leading-tight text-paper">{book.title}</span>
         <span className="mt-0.5 block text-[11px] text-fog">{book.author}</span>
         <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.12em] text-brass">{statusLine}</span>
@@ -95,9 +95,9 @@ export default function SpineShelf({ groups, onOpen }: { groups: ShelfGroup[]; o
               <p className="hidden text-[12px] italic text-dim sm:block">{grp.note}</p>
             </div>
             {grp.books.length > 0 ? (
-              <div className="-mt-16 overflow-x-auto pb-1 [scrollbar-width:thin]">
+              <div className="-mt-16 overflow-x-auto pb-1 [scrollbar-width:thin]" style={{ minHeight: "230px" }}>
                 <div className="w-max min-w-full">
-                  <div className="flex items-end gap-[6px] px-1 pt-24">
+                  <div className="flex min-h-[230px] items-end gap-[6px] px-1 pt-24">
                     {grp.books.map((b, i) => (
                       <Spine key={b.id} book={b} onOpen={onOpen} index={i} />
                     ))}

@@ -117,7 +117,7 @@ export function ToastHost({ toasts }: { toasts: Toast[] }) {
         <div
           key={t.id}
           role="status"
-          className="toast-in pointer-events-auto flex items-start gap-3 rounded-md border border-line bg-raise/95 px-4 py-3 shadow-card backdrop-blur-sm"
+          className="toast-in pointer-events-auto flex items-start gap-3 rounded-md border border-line bg-raise/95 px-4 py-3 shadow-card"
           style={{ borderLeft: `3px solid ${t.tone === "sage" ? "#8fc7a0" : t.tone === "ember" ? "#de6a50" : "#e2a94e"}` }}
         >
           <p className="text-[13.5px] leading-snug text-paper">{t.msg}</p>
@@ -145,7 +145,7 @@ export function ModalShell({
     <div className="fixed inset-0 z-[60] flex items-end justify-center p-0 sm:items-center sm:p-6">
       <button
         aria-label="Close dialog"
-        className="fade-in absolute inset-0 cursor-default bg-ink/78 backdrop-blur-[3px]"
+        className="fade-in absolute inset-0 cursor-default bg-ink/88"
         onClick={onClose}
         tabIndex={-1}
       />
@@ -153,7 +153,7 @@ export function ModalShell({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className={`modal-in relative max-h-[92vh] w-full overflow-y-auto rounded-t-xl border border-line bg-pine shadow-card sm:rounded-xl ${
+        className={`modal-in relative max-h-[92vh] w-full overflow-y-auto rounded-t-xl border border-line bg-pine shadow-card sm:rounded-xl [contain:layout_style] ${
           wide ? "sm:max-w-2xl" : "sm:max-w-lg"
         }`}
       >

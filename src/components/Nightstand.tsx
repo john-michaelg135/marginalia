@@ -32,7 +32,7 @@ function ReadingCard({ book, books, onLiveProgress, onCommitDrag, onLog, onFinis
   };
 
   return (
-    <article className="group flex h-full flex-col rounded-lg border border-linesoft bg-moss/80 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-line hover:bg-moss hover:shadow-card">
+    <article className="group flex h-full flex-col rounded-lg border border-linesoft bg-moss/80 p-5 transition-[transform,border-color,background-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-line hover:bg-moss hover:shadow-card">
       <div className="mb-3 flex items-center justify-between gap-2">
         <GenreChip genre={book.genre} />
         <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-sage">
@@ -75,31 +75,58 @@ function ReadingCard({ book, books, onLiveProgress, onCommitDrag, onLog, onFinis
         />
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        {[10, 25].map((n) => (
+      <div className="mt-4 grid grid-cols-[auto_1fr] gap-2">
+        {/* Row 1: Page step buttons */}
+        <div className="col-span-2 flex items-center gap-1.5">
           <button
-            key={n}
-            onClick={() => onLog(book.id, n)}
-            className="cursor-pointer rounded-md border border-line bg-pine px-3 py-1.5 font-mono text-[12px] font-medium text-fog transition-all duration-150 hover:-translate-y-px hover:border-brass/60 hover:text-brass active:translate-y-0"
+            onClick={() => onLog(book.id, -1)}
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line bg-moss font-mono text-[15px] font-bold text-fog transition-colors duration-150 hover:border-brass/60 hover:text-brass"
+            aria-label="Minus 1 page"
           >
-            +{n} pages
+            −
           </button>
-        ))}
-        <div className="ml-auto flex items-center gap-1.5">
+          <button
+            onClick={() => onLog(book.id, -10)}
+            className="flex-1 cursor-pointer rounded-md border border-line bg-moss py-1.5 text-center font-mono text-[11px] font-medium text-fog transition-colors duration-150 hover:border-brass/60 hover:text-brass"
+          >
+            -10
+          </button>
+          <button
+            onClick={() => onLog(book.id, 10)}
+            className="flex-1 cursor-pointer rounded-md border border-line bg-moss py-1.5 text-center font-mono text-[11px] font-medium text-fog transition-colors duration-150 hover:border-brass/60 hover:text-brass"
+          >
+            +10
+          </button>
+          <button
+            onClick={() => onLog(book.id, 25)}
+            className="flex-1 cursor-pointer rounded-md border border-line bg-moss py-1.5 text-center font-mono text-[11px] font-medium text-fog transition-colors duration-150 hover:border-brass/60 hover:text-brass"
+          >
+            +25
+          </button>
+          <button
+            onClick={() => onLog(book.id, 1)}
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line bg-moss font-mono text-[15px] font-bold text-fog transition-colors duration-150 hover:border-brass/60 hover:text-brass"
+            aria-label="Plus 1 page"
+          >
+            +
+          </button>
+        </div>
+        {/* Row 2: Custom input */}
+        <div className="col-span-2 flex items-center gap-1.5">
           <input
             type="number"
             min={1}
             inputMode="numeric"
-            placeholder="37"
+            placeholder="custom"
             aria-label="Custom pages read"
             value={custom}
             onChange={(e) => setCustom(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submitCustom()}
-            className="w-14 rounded-md border border-line bg-ink/70 px-2 py-1.5 text-center font-mono text-[12px] text-paper placeholder:text-dim/60 focus:border-brass/60 focus:outline-none"
+            className="min-w-0 flex-1 rounded-md border border-line bg-ink/70 px-2.5 py-1.5 font-mono text-[11px] text-paper placeholder:text-dim/60 focus:border-brass/60 focus:outline-none"
           />
           <button
             onClick={submitCustom}
-            className="cursor-pointer rounded-md bg-raise px-3 py-1.5 font-mono text-[12px] font-medium text-paper transition-colors hover:bg-line"
+            className="cursor-pointer rounded-md bg-brass/90 px-4 py-1.5 font-mono text-[11px] font-semibold text-ink transition-colors hover:bg-brass"
           >
             Log
           </button>

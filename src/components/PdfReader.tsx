@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Document, Page } from "react-pdf";
 import "../lib/pdfWorker";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -27,6 +27,7 @@ export default function PdfReader({ book, onClose, onPageChange }: Props) {
   const [loading, setLoading] = useState(true);
   const [pdfData, setPdfData] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const color = GENRES[book.genre].color;
 
   useEscape(onClose);
@@ -52,16 +53,21 @@ export default function PdfReader({ book, onClose, onPageChange }: Props) {
   };
 
   const goTo = useCallback(
-    (page: number) => {
+    (page: number, direction: "next" | "prev" = "next") => {
       const clamped = Math.max(1, Math.min(numPages, page));
       setCurrentPage(clamped);
       onPageChange(clamped);
+      if (direction === "prev") {
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+      } else {
+        scrollRef.current?.scrollTo({ top: 0 });
+      }
     },
     [numPages, onPageChange]
   );
 
-  const prev = () => goTo(currentPage - 1);
-  const next = () => goTo(currentPage + 1);
+  const prev = () => goTo(currentPage - 1, "prev");
+  const next = () => goTo(currentPage + 1, "next");
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -101,6 +107,14 @@ export default function PdfReader({ book, onClose, onPageChange }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Reading zoom preset */}
+          <button
+            onClick={() => setScale(2.05)}
+            className="cursor-pointer rounded-full px-3 py-1 font-mono text-[10.5px] font-semibold uppercase tracking-[0.1em] transition-colors hover:brightness-110"
+            style={{ background: color, color: "#0c1512" }}
+          >
+            Reading zoom
+          </button>
           {/* Zoom controls */}
           <div className="flex items-center gap-1.5 rounded-full border border-linesoft bg-pine/70 px-2.5 py-1">
             <button
@@ -133,7 +147,7 @@ export default function PdfReader({ book, onClose, onPageChange }: Props) {
       </header>
 
       {/* PDF view area */}
-      <div className="relative flex-1 overflow-auto">
+      <div ref={scrollRef} className="relative flex-1 overflow-auto">
         <div className="flex min-h-full items-start justify-center py-6">
           {loading && (
             <div className="flex flex-col items-center gap-3 pt-24">
